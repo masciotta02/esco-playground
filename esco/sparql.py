@@ -60,7 +60,7 @@ class SparqlClient:
         res = self.query(
             """
 
-            SELECT DISTINCT
+            SELECT DISTINCT 
                 ?uri
                 ?label
                 ?category
@@ -71,8 +71,8 @@ class SparqlClient:
             WHERE {
 
                     VALUES ?category { """
-            + categories
-            + """ }
+                    + categories
+                    + """ }
 
                     ?uri a esco:Skill ;
                         skos:prefLabel ?label ;
@@ -118,7 +118,7 @@ class SparqlClient:
         res = self.query(query)
         df = pd.read_csv(io.StringIO(res.decode()))
         return df.groupby(df.s).agg(lambda x: x.iloc[0]).to_dict(orient="index")
-
+    
     def load_isco(self, categories=None):
         categories = categories or [  # Defaults to ICT professionals and technicians.
             "http://data.europa.eu/esco/isco/C25",
@@ -181,7 +181,7 @@ class SparqlClient:
         res = self.query(
             """
 
-        SELECT DISTINCT
+        SELECT DISTINCT 
             ?uri
             ?label
             ?category
@@ -189,7 +189,7 @@ class SparqlClient:
             ?altLabel
             ?description
             (GROUP_CONCAT(DISTINCT ?narrower; separator=", ") AS ?narrowers)
-
+         
         WHERE {
 
         VALUES ?category { """
@@ -206,8 +206,8 @@ class SparqlClient:
         #  with the occupation.
         ?uri esco:skillType ?skillType ;
              iso-thes:status "released";
-             skos:prefLabel ?label . FILTER (lang(?label) = "en")
-
+             skos:prefLabel ?label . FILTER (lang(?label) = "en") 
+    
 
         # If an occupation lacks a description,
         #   don't skip it.
@@ -220,36 +220,33 @@ class SparqlClient:
             esco:language "en"^^xsd:language
             .
         }
-
-
+        
+      
                         }"""
         )
         df = pd.read_csv(io.StringIO(res.decode()))
         return df
 
-    def load_esco(self, categories=None):
+    def load_esco(self,categories=None):
         skill1_data = self._load_skills_from_isco()
         skill2_data = self._load_skills_from_esco()
-
+        
         # Debugging statements to check the loaded data
         print("Skill1 Data:", skill1_data)
         print("Skill2 Data:", skill2_data)
-
+        
         # Assuming skill1_data and skill2_data are serialized DataFrames
         if isinstance(skill1_data, str):
-            skill1 = (
-                pd.read_json(skill1_data) if skill1_data.strip() else pd.DataFrame()
-            )
+            skill1 = pd.read_json(skill1_data) if skill1_data.strip() else pd.DataFrame()
         else:
             skill1 = skill1_data
 
         if isinstance(skill2_data, str):
-            skill2 = (
-                pd.read_json(skill2_data) if skill2_data.strip() else pd.DataFrame()
-            )
+            skill2 = pd.read_json(skill2_data) if skill2_data.strip() else pd.DataFrame()
         else:
             skill2 = skill2_data
-
+    
+    
         # Performing a union operation
         if not skill1.empty and not skill2.empty:
             skill1_set = set([tuple(row) for row in skill1.values])
@@ -258,9 +255,10 @@ class SparqlClient:
             union_df = pd.DataFrame(list(union_set), columns=skill1.columns)
         else:
             union_df = pd.DataFrame()
-
+            
         return union_df
-
+        
+    
     def load_skills(self):
         df = self.load_esco()
         return esco.util._aggregate_skills(df)
