@@ -205,9 +205,9 @@ class SparqlClient:
         # Get current skill labels associated
         #  with the occupation.
         ?uri esco:skillType ?skillType ;
-             iso-thes:status "released"
+             iso-thes:status "released";
              skos:prefLabel ?label . FILTER (lang(?label) = "en")
-            .
+
 
         # If an occupation lacks a description,
         #   don't skip it.
@@ -227,11 +227,39 @@ class SparqlClient:
         df = pd.read_csv(io.StringIO(res.decode()))
         return df
 
-    def load_esco():
-        skill1 = self._load_skills_from_isco()
-        skill2 = self._load_skills_from_esco()
+    def load_esco(self, categories=None):
+        skill1_data = self._load_skills_from_isco()
+        skill2_data = self._load_skills_from_esco()
 
-        skill1.union(skill2)
+        # Debugging statements to check the loaded data
+        print("Skill1 Data:", skill1_data)
+        print("Skill2 Data:", skill2_data)
+
+        # Assuming skill1_data and skill2_data are serialized DataFrames
+        if isinstance(skill1_data, str):
+            skill1 = (
+                pd.read_json(skill1_data) if skill1_data.strip() else pd.DataFrame()
+            )
+        else:
+            skill1 = skill1_data
+
+        if isinstance(skill2_data, str):
+            skill2 = (
+                pd.read_json(skill2_data) if skill2_data.strip() else pd.DataFrame()
+            )
+        else:
+            skill2 = skill2_data
+
+        # Performing a union operation
+        if not skill1.empty and not skill2.empty:
+            skill1_set = set([tuple(row) for row in skill1.values])
+            skill2_set = set([tuple(row) for row in skill2.values])
+            union_set = skill1_set.union(skill2_set)
+            union_df = pd.DataFrame(list(union_set), columns=skill1.columns)
+        else:
+            union_df = pd.DataFrame()
+
+        return union_df
 
     def load_skills(self):
         df = self.load_esco()
